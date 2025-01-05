@@ -1,0 +1,9 @@
+Here are some Python packages that are used for this analysis:
+
+    pandas: For data manipulation and analysis.
+    numpy: For numerical operations.
+    matplotlib: For creating static, animated, and interactive visualizations.
+    seaborn: For statistical data visualization.
+    scikit-learn: For any machine learning tasks or advanced analysis.
+    plotly.express: For working with Column-oriented, Matrix or Geographic Data(mostly for visualization).
+
