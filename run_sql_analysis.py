@@ -8,6 +8,10 @@ import pandas as pd
 import os
 
 
+# SQL helper for cleaning price strings (removes '$' and spaces)
+CLEAN_PRICE_SQL = "CAST(REPLACE(REPLACE(price, '$', ''), ' ', '') AS REAL)"
+
+
 def run_query(db_file, query, description=""):
     """
     Run a SQL query and display results.
@@ -21,21 +25,18 @@ def run_query(db_file, query, description=""):
     description : str
         Description of the query
     """
-    conn = sqlite3.connect(db_file)
-    
     if description:
         print(f"\n{'='*80}")
         print(f"{description}")
         print(f"{'='*80}")
     
     try:
-        df = pd.read_sql_query(query, conn)
-        print(df.to_string())
-        print(f"\nRows returned: {len(df)}")
+        with sqlite3.connect(db_file) as conn:
+            df = pd.read_sql_query(query, conn)
+            print(df.to_string())
+            print(f"\nRows returned: {len(df)}")
     except Exception as e:
         print(f"Error executing query: {e}")
-    finally:
-        conn.close()
 
 
 def run_all_queries(db_file='airbnb_data.db'):
@@ -69,13 +70,13 @@ def run_all_queries(db_file='airbnb_data.db'):
     run_query(db_file, query1, "1. Basic Statistics")
     
     # Query 2: Average Price by Neighbourhood Group
-    query2 = """
+    query2 = f"""
     SELECT 
         neighbourhood_group,
         COUNT(*) as listings_count,
-        ROUND(AVG(CAST(REPLACE(REPLACE(price, '$', ''), ' ', '') AS REAL)), 2) as avg_price,
-        ROUND(MIN(CAST(REPLACE(REPLACE(price, '$', ''), ' ', '') AS REAL)), 2) as min_price,
-        ROUND(MAX(CAST(REPLACE(REPLACE(price, '$', ''), ' ', '') AS REAL)), 2) as max_price
+        ROUND(AVG({CLEAN_PRICE_SQL}), 2) as avg_price,
+        ROUND(MIN({CLEAN_PRICE_SQL}), 2) as min_price,
+        ROUND(MAX({CLEAN_PRICE_SQL}), 2) as max_price
     FROM airbnb_listings
     WHERE price IS NOT NULL AND price != ''
     GROUP BY neighbourhood_group
@@ -84,13 +85,13 @@ def run_all_queries(db_file='airbnb_data.db'):
     run_query(db_file, query2, "2. Average Price by Neighbourhood Group")
     
     # Query 3: Average Price by Room Type
-    query3 = """
+    query3 = f"""
     SELECT 
         room_type,
         COUNT(*) as listings_count,
-        ROUND(AVG(CAST(REPLACE(REPLACE(price, '$', ''), ' ', '') AS REAL)), 2) as avg_price,
-        ROUND(MIN(CAST(REPLACE(REPLACE(price, '$', ''), ' ', '') AS REAL)), 2) as min_price,
-        ROUND(MAX(CAST(REPLACE(REPLACE(price, '$', ''), ' ', '') AS REAL)), 2) as max_price
+        ROUND(AVG({CLEAN_PRICE_SQL}), 2) as avg_price,
+        ROUND(MIN({CLEAN_PRICE_SQL}), 2) as min_price,
+        ROUND(MAX({CLEAN_PRICE_SQL}), 2) as max_price
     FROM airbnb_listings
     WHERE price IS NOT NULL AND price != ''
     GROUP BY room_type
@@ -99,12 +100,12 @@ def run_all_queries(db_file='airbnb_data.db'):
     run_query(db_file, query3, "3. Average Price by Room Type")
     
     # Query 4: Top 10 Most Expensive Neighbourhoods
-    query4 = """
+    query4 = f"""
     SELECT 
         neighbourhood,
         neighbourhood_group,
         COUNT(*) as listings_count,
-        ROUND(AVG(CAST(REPLACE(REPLACE(price, '$', ''), ' ', '') AS REAL)), 2) as avg_price
+        ROUND(AVG({CLEAN_PRICE_SQL}), 2) as avg_price
     FROM airbnb_listings
     WHERE price IS NOT NULL AND price != ''
     GROUP BY neighbourhood, neighbourhood_group
@@ -128,13 +129,13 @@ def run_all_queries(db_file='airbnb_data.db'):
     run_query(db_file, query5, "5. Review Rating Distribution")
     
     # Query 6: Top 10 Hosts with Most Listings
-    query6 = """
+    query6 = f"""
     SELECT 
         host_id,
         host_name,
         host_identity_verified,
         COUNT(*) as total_listings,
-        ROUND(AVG(CAST(REPLACE(REPLACE(price, '$', ''), ' ', '') AS REAL)), 2) as avg_price,
+        ROUND(AVG({CLEAN_PRICE_SQL}), 2) as avg_price,
         ROUND(AVG(review_rate_number), 2) as avg_rating
     FROM airbnb_listings
     GROUP BY host_id, host_name, host_identity_verified
@@ -158,7 +159,7 @@ def run_all_queries(db_file='airbnb_data.db'):
     run_query(db_file, query7, "7. Room Type Distribution by Neighbourhood Group")
     
     # Query 8: Cancellation Policy Distribution
-    query8 = """
+    query8 = f"""
     SELECT 
         cancellation_policy,
         COUNT(*) as count,
@@ -171,12 +172,12 @@ def run_all_queries(db_file='airbnb_data.db'):
     run_query(db_file, query8, "8. Cancellation Policy Distribution")
     
     # Query 9: Top 20 Neighbourhoods by Number of Listings
-    query9 = """
+    query9 = f"""
     SELECT 
         neighbourhood,
         neighbourhood_group,
         COUNT(*) as listings_count,
-        ROUND(AVG(CAST(REPLACE(REPLACE(price, '$', ''), ' ', '') AS REAL)), 2) as avg_price,
+        ROUND(AVG({CLEAN_PRICE_SQL}), 2) as avg_price,
         ROUND(AVG(review_rate_number), 2) as avg_rating,
         ROUND(AVG(availability_365), 2) as avg_availability
     FROM airbnb_listings
@@ -222,16 +223,14 @@ def custom_query(db_file='airbnb_data.db'):
         if not query:
             continue
         
-        conn = sqlite3.connect(db_file)
         try:
-            df = pd.read_sql_query(query, conn)
-            print("\nResults:")
-            print(df.to_string())
-            print(f"\nRows returned: {len(df)}\n")
+            with sqlite3.connect(db_file) as conn:
+                df = pd.read_sql_query(query, conn)
+                print("\nResults:")
+                print(df.to_string())
+                print(f"\nRows returned: {len(df)}\n")
         except Exception as e:
             print(f"Error: {e}\n")
-        finally:
-            conn.close()
 
 
 if __name__ == '__main__':

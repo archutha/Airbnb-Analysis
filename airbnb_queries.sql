@@ -1,6 +1,10 @@
 -- SQL Queries for Airbnb Data Analysis
 -- These queries can be used to analyze the Airbnb dataset using SQL
 
+-- Note: Price data is stored as text with '$' and spaces (e.g., '$100 ')
+-- To use price in calculations, use: CAST(REPLACE(REPLACE(price, '$', ''), ' ', '') AS REAL)
+-- This pattern is used consistently throughout the queries below.
+
 -- ============================================================================
 -- 1. BASIC STATISTICS
 -- ============================================================================
